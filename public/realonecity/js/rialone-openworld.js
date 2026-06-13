@@ -364,7 +364,7 @@
             marker = missionManager.worldMarkers[i];
 
             if (marker.mesh.visible !== false && marker.type === "mission") {
-                this.drawMapDot(ctx, marker.mesh.position.x, marker.mesh.position.y, size, marker.color || MINT, 5);
+                this.drawMapCross(ctx, marker.mesh.position.x, marker.mesh.position.y, size, marker.color || MINT, 6);
             }
         }
 
@@ -752,7 +752,16 @@
     GTA.RialoneMissionManager.prototype.isMarkerBlock = function (blockX, blockY) {
         var type = this.getMarkerBlockType(blockX, blockY);
 
-        return type === 2 || type === 3 || type === 4;
+        if (type === 2) {
+            return true;
+        }
+
+        return type === 3 && (
+            this.getMarkerBlockType(blockX + 1, blockY) === 2 ||
+            this.getMarkerBlockType(blockX - 1, blockY) === 2 ||
+            this.getMarkerBlockType(blockX, blockY + 1) === 2 ||
+            this.getMarkerBlockType(blockX, blockY - 1) === 2
+        );
     };
 
     GTA.RialoneMissionManager.prototype.findNearestMarkerBlock = function (blockX, blockY, index) {
@@ -760,12 +769,9 @@
             dx,
             dy,
             candidate,
-            fallback = {
-                x: Math.max(1, Math.min(254, blockX)),
-                y: Math.max(1, Math.min(254, blockY))
-            };
+            fallback = null;
 
-        for (radius = 0; radius < 9; radius += 1) {
+        for (radius = 0; radius < 28; radius += 1) {
             for (dx = -radius; dx <= radius; dx += 1) {
                 for (dy = -radius; dy <= radius; dy += 1) {
                     if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) {
@@ -777,14 +783,25 @@
                         y: Math.max(1, Math.min(254, blockY + dy))
                     };
 
-                    if (this.isMarkerBlock(candidate.x, candidate.y) && ((candidate.x + candidate.y + index) % 2 === 0 || radius > 3)) {
+                    if (!this.isMarkerBlock(candidate.x, candidate.y)) {
+                        continue;
+                    }
+
+                    if (fallback === null) {
+                        fallback = candidate;
+                    }
+
+                    if ((candidate.x + candidate.y + index) % 2 === 0 || radius > 3) {
                         return candidate;
                     }
                 }
             }
         }
 
-        return fallback;
+        return fallback || {
+            x: Math.max(1, Math.min(254, blockX)),
+            y: Math.max(1, Math.min(254, blockY))
+        };
     };
 
     GTA.RialoneMissionManager.prototype.markerPositionFromBlock = function (block, index, z) {
@@ -793,7 +810,7 @@
         return {
             x: (block.x * 64) + nudge,
             y: -(block.y * 64) - nudge,
-            z: z || 166
+            z: z || 360
         };
     };
 
@@ -915,7 +932,7 @@
 
     GTA.RialoneMissionManager.prototype.createMarker = function (type, label, position, color, mission) {
         var canvas = this.createMarkerCanvas(label, color),
-            mesh = this.createCanvasMesh(canvas, type === "mission" ? 64 : 72, type === "mission" ? 64 : 72);
+            mesh = this.createCanvasMesh(canvas, type === "mission" ? 86 : 94, type === "mission" ? 86 : 94);
 
         mesh.position.set(position.x, position.y, position.z);
         this.game.scene.add(mesh);
@@ -925,7 +942,7 @@
             label: label,
             mesh: mesh,
             baseZ: position.z,
-            radius: type === "mission" ? 86 : 92,
+            radius: type === "mission" ? 132 : 140,
             mission: mission,
             color: color
         };
@@ -968,10 +985,16 @@
         material = new THREE.MeshBasicMaterial({
             map: texture,
             transparent: true,
+            depthTest: false,
+            depthWrite: false,
             color: 0xffffff
         });
+        material.depthTest = false;
+        material.depthWrite = false;
         mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height, 1, 1), material);
         mesh.doubleSided = true;
+        mesh.frustumCulled = false;
+        mesh.renderDepth = 10000;
 
         return mesh;
     };
@@ -1689,9 +1712,10 @@
             this.state.health = 100;
             this.state.armor = 0;
             this.state.money = Math.max(0, this.state.money - 250);
-            this.state.currentObjective = "You got dropped. Regroup at a safehouse.";
+            this.state.currentObjective = "Recovered. Find the next mission marker.";
             this.ui.showSplash("Wasted", "-$250 hospital bill");
             this.saveSystem.save(this.game.player);
+            this.missions.spawnMissionMarkers();
         }
     };
 }());
