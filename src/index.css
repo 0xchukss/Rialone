@@ -7,6 +7,9 @@
 }
 
 :root {
+  --rialo-mint: #A9DDD3;
+  --rialo-cream: #E8E4D9;
+  --rialo-black: #010101;
   --bg: #E8E4D9;
   --bg2: #DEDAD0;
   --card: #F0EDE5;
@@ -50,4 +53,3 @@ body {
 .linear {
   transition-timing-function: linear;
 }
-

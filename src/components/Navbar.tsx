@@ -3,7 +3,11 @@ import { usePrivy } from '../lib/PrivyProvider';
 import { LogOut, LogIn, User as UserIcon } from 'lucide-react';
 import { RIALO_LOGO_BASE64 } from '../data/gameData';
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  onHome?: () => void;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ onHome }) => {
   const { user, login, logout, loading, authenticated } = usePrivy();
 
   const displayName = user?.google?.name || user?.email?.address?.split('@')[0] || user?.id?.slice(0, 10) || 'User';
@@ -11,10 +15,14 @@ export const Navbar: React.FC = () => {
 
   return (
     <nav className="fixed top-0 left-0 w-full z-[100] px-6 py-4 flex justify-between items-center bg-transparent">
-      <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={onHome}
+        className="flex items-center gap-3 transition-opacity hover:opacity-80"
+      >
         <img src={RIALO_LOGO_BASE64} className="w-8 h-8 opacity-80" alt="Rialo" />
         <span className="font-black tracking-tighter text-white/40 uppercase text-xs">RialONE</span>
-      </div>
+      </button>
 
       <div className="flex items-center gap-3">
         {authenticated && user ? (

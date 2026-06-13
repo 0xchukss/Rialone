@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'motion/react';
+import { LogIn } from 'lucide-react';
 import { RIALO_LOGO_BASE64 } from '../data/gameData';
 import { cn } from '../lib/utils';
 
@@ -38,10 +39,11 @@ const FloatingText: React.FC<FloatingTextProps> = ({ text, delay, duration, size
 );
 
 interface LandingPageProps {
-  onEnter: () => void;
+  isLoading: boolean;
+  onSignIn: () => void;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ isLoading, onSignIn }) => {
   const floatingTexts = useMemo(() => {
     const texts = [];
     const sizes = ['text-2xl', 'text-4xl', 'text-6xl', 'text-8xl', 'text-9xl'];
@@ -118,14 +120,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
         </h1>
         
         <p className="text-neutral-400 text-sm md:text-base max-w-md mb-12 font-medium">
-          Test your all round knowledge about rialo and it's technology.
+          Sign in first, then choose your game.
         </p>
 
         <button
-          onClick={onEnter}
-          className="group relative px-12 py-4 bg-white text-black font-sans font-bold rounded-full overflow-hidden transition-all hover:scale-105 active:scale-95"
+          onClick={onSignIn}
+          disabled={isLoading}
+          className="group relative flex items-center gap-3 overflow-hidden rounded-full bg-white px-12 py-4 font-sans font-bold text-black transition-all hover:scale-105 active:scale-95 disabled:cursor-wait disabled:opacity-60"
         >
-          <span className="relative z-10 uppercase tracking-widest text-sm">Enter the Game</span>
+          <span className="relative z-10 flex items-center gap-3 uppercase tracking-widest text-sm">
+            <LogIn size={16} />
+            {isLoading ? 'Loading...' : 'Sign in'}
+          </span>
           <motion.div 
             className="absolute inset-0 bg-neutral-200"
             initial={{ x: '-100%' }}

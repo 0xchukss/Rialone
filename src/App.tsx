@@ -14,10 +14,12 @@ import { GameHeader } from './components/GameHeader';
 import { Overlay } from './components/Overlay';
 import { PrizeLadder } from './components/PrizeLadder';
 import { Navbar } from './components/Navbar';
-
 import { LandingPage } from './components/LandingPage';
+import { GameSelectionPage } from './components/GameSelectionPage';
+import { RialOneCityGame } from './components/RialOneCityGame';
+import { usePrivy } from './lib/PrivyProvider';
 
-type GameState = 'LANDING' | 'TITLE' | 'INTRO' | 'READ' | 'QUESTION' | 'REWARD' | 'RESULT' | 'VAULT';
+type GameState = 'LANDING' | 'SELECT' | 'TITLE' | 'INTRO' | 'READ' | 'QUESTION' | 'REWARD' | 'RESULT' | 'VAULT' | 'CITY';
 
 interface SavedCard {
   dataUrl: string;
@@ -27,6 +29,7 @@ interface SavedCard {
 }
 
 export default function App() {
+  const { authenticated, loading, login, user } = usePrivy();
   const [gameState, setGameState] = useState<GameState>('LANDING');
   const [currentSectionIdx, setCurrentSectionIdx] = useState(0);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -42,6 +45,24 @@ export default function App() {
 
   const currentSection = shuffledSections[currentSectionIdx];
   const currentQuestion = currentSection?.questions[currentQuestionIdx];
+
+  useEffect(() => {
+    if (gameState === 'LANDING' && authenticated && user) {
+      setGameState('SELECT');
+    }
+  }, [authenticated, gameState, user]);
+
+  useEffect(() => {
+    if (!loading && !authenticated && gameState !== 'LANDING') {
+      window.sessionStorage.removeItem('rialone_city_access');
+      setGameState('LANDING');
+    }
+  }, [authenticated, gameState, loading]);
+
+  const handleSelectCity = () => {
+    window.sessionStorage.setItem('rialone_city_access', '1');
+    setGameState('CITY');
+  };
 
   // Initialize game
   const initGame = useCallback(() => {
@@ -157,18 +178,32 @@ export default function App() {
     }
   }, [currentQuestionIdx, gameState]);
 
-  if (shuffledSections.length === 0 && !['TITLE', 'LANDING', 'VAULT'].includes(gameState)) {
+  if (shuffledSections.length === 0 && !['TITLE', 'LANDING', 'SELECT', 'VAULT', 'CITY'].includes(gameState)) {
     return null;
   }
 
   return (
     <div className="relative min-h-screen font-sans overflow-x-hidden selection:bg-black selection:text-white">
-      <Navbar />
+      {gameState !== 'LANDING' && gameState !== 'CITY' && (
+        <Navbar onHome={() => setGameState('SELECT')} />
+      )}
       <AnimatePresence mode="wait">
         {gameState === 'LANDING' ? (
           <LandingPage 
             key="landing"
-            onEnter={() => setGameState('TITLE')}
+            isLoading={loading}
+            onSignIn={login}
+          />
+        ) : gameState === 'SELECT' ? (
+          <GameSelectionPage
+            key="selection"
+            onSelectQuiz={() => setGameState('TITLE')}
+            onSelectCity={handleSelectCity}
+          />
+        ) : gameState === 'CITY' ? (
+          <RialOneCityGame
+            key="city"
+            onBack={() => setGameState('SELECT')}
           />
         ) : (
           <>
@@ -310,4 +345,3 @@ export default function App() {
     </div>
   );
 }
-
